@@ -1301,6 +1301,8 @@ export class Game {
     if (this.dpr && this.dpr !== 1) {
       this.ctx.scale(this.dpr, this.dpr);
     }
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
 
     // Apply Camera
     this.camera.apply(this.ctx);
