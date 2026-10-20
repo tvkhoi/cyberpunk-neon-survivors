@@ -1,0 +1,27 @@
+{
+  "name": "cyberpunk-neon-survivors",
+  "version": "1.0.0",
+  "description": "High-octane top-down cyberpunk neon action shooter with procedural lighting and Web Audio synthwave",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "test": "tsx --test tests/**/*.test.ts",
+    "test:watch": "tsx --test --watch tests/**/*.test.ts",
+    "test:concurrency": "tsx --test tests/concurrency.test.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.0",
+    "supertest": "^7.3.1",
+    "@types/supertest": "^7.2.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
