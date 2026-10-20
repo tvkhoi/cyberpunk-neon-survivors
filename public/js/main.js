@@ -2,11 +2,15 @@ import { Game } from './game.js';
 import { soundEngine } from './audio/soundEngine.js';
 import { AVATARS } from './entities/player.js';
 import { findNearestDrops } from './entities/drops.js';
+import { MobileScreenManager } from './engine/mobileScreen.js';
 
 window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('gameCanvas');
   const game = new Game(canvas);
   window.game = game;
+  const mobileScreen = new MobileScreenManager(game);
+  mobileScreen.init();
+  window.mobileScreen = mobileScreen;
   game.start();
 
   // --- Character Profile & Avatar Customization System ---

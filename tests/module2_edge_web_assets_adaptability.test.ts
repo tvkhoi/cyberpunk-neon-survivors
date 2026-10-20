@@ -244,7 +244,7 @@ describe('Module 2: Edge Web & Assets Adaptability & HTTPS Edge Vercel Test Suit
 
       assert.equal(manifest.name, 'Cyberpunk Neon Survivors');
       assert.equal(manifest.short_name, 'NeonSurvivors');
-      assert.equal(manifest.display, 'standalone');
+      assert.ok(manifest.display === 'fullscreen' || manifest.display === 'standalone', 'display should be fullscreen or standalone');
       assert.equal(manifest.theme_color, '#05070f');
       assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0);
     });

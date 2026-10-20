@@ -3,8 +3,8 @@
   "short_name": "NeonSurvivors",
   "description": "High-octane top-down cyberpunk neon action shooter with procedural lighting and Web Audio synthwave",
   "start_url": "/",
-  "display": "standalone",
-  "orientation": "any",
+  "display": "fullscreen",
+  "orientation": "landscape",
   "background_color": "#05070f",
   "theme_color": "#05070f",
   "icons": [
