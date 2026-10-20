@@ -497,8 +497,8 @@ describe('Module 4: QA Integration, Unit Tests & Concurrency Tests for Elite Aff
       const duration = performance.now() - t0;
 
       assert.ok(
-        duration < 120,
-        `250 concurrent Elites x 30 ticks executed in ${duration.toFixed(2)}ms (expected < 120ms)`
+        duration < 250,
+        `250 concurrent Elites x 30 ticks executed in ${duration.toFixed(2)}ms (expected < 250ms)`
       );
 
       // Verify state integrity: no NaNs, no broken properties

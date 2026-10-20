@@ -241,6 +241,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const joystickZone = document.getElementById('joystickZone');
   const joystickBase = document.getElementById('joystickBase');
   const joystickKnob = document.getElementById('joystickKnob');
+  const joyArrowUp = document.getElementById('joyArrowUp');
+  const joyArrowDown = document.getElementById('joyArrowDown');
+  const joyArrowLeft = document.getElementById('joyArrowLeft');
+  const joyArrowRight = document.getElementById('joyArrowRight');
   const btnTouchDash = document.getElementById('btnTouchDash');
   const btnTouchBulletTime = document.getElementById('btnTouchBulletTime');
   const btnTouchMedkit = document.getElementById('btnTouchMedkit');
@@ -249,6 +253,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const touchAutoAimText = document.getElementById('touchAutoAimText');
   const touchMedkitBadge = document.getElementById('touchMedkitBadge');
   const selectTouchControls = document.getElementById('selectTouchControls');
+  const selectJoystickType = document.getElementById('selectJoystickType');
+  const checkHapticFeedback = document.getElementById('checkHapticFeedback');
   const checkAutoAim = document.getElementById('checkAutoAim');
 
   // Stop propagation on URL / Track Name inputs
@@ -770,86 +776,196 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateMobileControlsVisibility, 150);
   });
 
-  // Virtual Joystick Interaction (360° Analog Vector)
+  // Virtual Joystick Interaction (360° Analog Vector & Dynamic Floating Positioning)
   if (joystickBase && joystickKnob) {
     let activePointerId = null;
+    let hasVibratedAtLimit = false;
     const maxRadius = 45;
+    const deadzoneRadius = 3; // ~3px deadzone to eliminate micro-tremble drift
+
+    let currentBaseCenterX = 0;
+    let currentBaseCenterY = 0;
+
+    const updateArrowGlow = (vx, vy) => {
+      if (joyArrowUp) {
+        joyArrowUp.className = vy < -0.25
+          ? 'absolute top-1 text-[8px] text-cyan-300 scale-125 transition-all flex items-center justify-center filter drop-shadow-[0_0_6px_#00f0ff]'
+          : 'absolute top-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center';
+      }
+      if (joyArrowDown) {
+        joyArrowDown.className = vy > 0.25
+          ? 'absolute bottom-1 text-[8px] text-cyan-300 scale-125 transition-all flex items-center justify-center filter drop-shadow-[0_0_6px_#00f0ff]'
+          : 'absolute bottom-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center';
+      }
+      if (joyArrowLeft) {
+        joyArrowLeft.className = vx < -0.25
+          ? 'absolute left-1 text-[8px] text-cyan-300 scale-125 transition-all flex items-center justify-center filter drop-shadow-[0_0_6px_#00f0ff]'
+          : 'absolute left-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center';
+      }
+      if (joyArrowRight) {
+        joyArrowRight.className = vx > 0.25
+          ? 'absolute right-1 text-[8px] text-cyan-300 scale-125 transition-all flex items-center justify-center filter drop-shadow-[0_0_6px_#00f0ff]'
+          : 'absolute right-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center';
+      }
+    };
 
     const handleJoystickMove = (clientX, clientY) => {
-      const rect = joystickBase.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      let dx = clientX - centerX;
-      let dy = clientY - centerY;
+      let dx = clientX - currentBaseCenterX;
+      let dy = clientY - currentBaseCenterY;
       const distance = Math.hypot(dx, dy);
 
+      let clampedDx = dx;
+      let clampedDy = dy;
       if (distance > maxRadius) {
-        dx = (dx / distance) * maxRadius;
-        dy = (dy / distance) * maxRadius;
+        clampedDx = (dx / distance) * maxRadius;
+        clampedDy = (dy / distance) * maxRadius;
       }
 
-      joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      joystickKnob.style.transform = `translate3d(${clampedDx}px, ${clampedDy}px, 0)`;
 
-      const normalizedMagnitude = Math.min(1, distance / maxRadius);
+      let normalizedMagnitude = 0;
+      if (distance > deadzoneRadius) {
+        normalizedMagnitude = Math.min(1, (distance - deadzoneRadius) / (maxRadius - deadzoneRadius));
+      }
+
       const angle = Math.atan2(dy, dx);
+      const vx = Math.cos(angle) * normalizedMagnitude;
+      const vy = Math.sin(angle) * normalizedMagnitude;
+
       if (game.player) {
-        game.player.joystickVector = {
-          x: Math.cos(angle) * normalizedMagnitude,
-          y: Math.sin(angle) * normalizedMagnitude,
-        };
+        game.player.joystickVector = { x: vx, y: vy };
       }
+
+      // Haptic Vibration at 100% boundary with hysteresis
+      if (normalizedMagnitude >= 0.98 && !hasVibratedAtLimit) {
+        if (typeof navigator !== 'undefined' && navigator.vibrate && game.hapticsEnabled !== false) {
+          try { navigator.vibrate(8); } catch (_) {}
+        }
+        hasVibratedAtLimit = true;
+      } else if (normalizedMagnitude < 0.85) {
+        hasVibratedAtLimit = false;
+      }
+
+      updateArrowGlow(vx, vy);
     };
 
     const resetJoystick = () => {
       activePointerId = null;
-      joystickKnob.style.transform = 'translate(0px, 0px)';
+      hasVibratedAtLimit = false;
+      joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
+      joystickKnob.classList.remove('scale-110', 'brightness-125');
+      joystickBase.classList.remove('ring-2', 'ring-cyan-400/70', 'shadow-[0_0_30px_rgba(0,240,255,0.5)]');
+
+      updateArrowGlow(0, 0);
+
+      // Return base to home position with smooth easing if dynamic mode was active
+      if ((game.joystickType || 'dynamic') === 'dynamic') {
+        joystickBase.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)';
+        joystickBase.style.transform = 'translate3d(0px, 0px, 0)';
+      }
+
       if (game.player) {
         game.player.joystickVector = { x: 0, y: 0 };
       }
     };
 
-    joystickBase.addEventListener('pointerdown', (e) => {
+    const handlePointerDown = (e) => {
       e.preventDefault();
       soundEngine.init();
       activePointerId = e.pointerId;
-      try {
-        joystickBase.setPointerCapture(e.pointerId);
-      } catch (err) {}
-      handleJoystickMove(e.clientX, e.clientY);
-    });
 
-    joystickBase.addEventListener('pointermove', (e) => {
+      try {
+        if (e.target && typeof e.target.setPointerCapture === 'function') {
+          e.target.setPointerCapture(e.pointerId);
+        } else if (joystickBase && typeof joystickBase.setPointerCapture === 'function') {
+          joystickBase.setPointerCapture(e.pointerId);
+        }
+      } catch (err) {}
+
+      // Visual active state
+      joystickBase.classList.add('ring-2', 'ring-cyan-400/70', 'shadow-[0_0_30px_rgba(0,240,255,0.5)]');
+      joystickKnob.classList.add('scale-110', 'brightness-125');
+
+      const isDynamic = (game.joystickType || 'dynamic') === 'dynamic';
+      if (isDynamic && joystickZone) {
+        const zoneRect = joystickZone.getBoundingClientRect();
+        const baseRadius = (joystickBase.offsetWidth || 96) / 2;
+        const zoneCenterX = zoneRect.left + zoneRect.width / 2;
+        const zoneCenterY = zoneRect.top + zoneRect.height / 2;
+
+        const clampedX = Math.max(zoneRect.left + baseRadius, Math.min(zoneRect.right - baseRadius, e.clientX));
+        const clampedY = Math.max(zoneRect.top + baseRadius, Math.min(zoneRect.bottom - baseRadius, e.clientY));
+
+        const shiftX = clampedX - zoneCenterX;
+        const shiftY = clampedY - zoneCenterY;
+
+        joystickBase.style.transition = 'none';
+        joystickBase.style.transform = `translate3d(${shiftX}px, ${shiftY}px, 0)`;
+
+        currentBaseCenterX = clampedX;
+        currentBaseCenterY = clampedY;
+      } else {
+        const rect = joystickBase.getBoundingClientRect();
+        currentBaseCenterX = rect.left + rect.width / 2;
+        currentBaseCenterY = rect.top + rect.height / 2;
+      }
+
+      handleJoystickMove(e.clientX, e.clientY);
+    };
+
+    const handlePointerMove = (e) => {
       if (e.pointerId === activePointerId) {
         e.preventDefault();
         handleJoystickMove(e.clientX, e.clientY);
       }
-    });
+    };
 
-    joystickBase.addEventListener('pointerup', (e) => {
+    const handlePointerUp = (e) => {
       if (e.pointerId === activePointerId) {
         e.preventDefault();
         try {
-          joystickBase.releasePointerCapture(e.pointerId);
+          if (e.target && typeof e.target.releasePointerCapture === 'function') {
+            e.target.releasePointerCapture(e.pointerId);
+          } else if (joystickBase && typeof joystickBase.releasePointerCapture === 'function') {
+            joystickBase.releasePointerCapture(e.pointerId);
+          }
         } catch (err) {}
         resetJoystick();
       }
-    });
+    };
 
-    joystickBase.addEventListener('pointercancel', (e) => {
+    const handlePointerCancel = (e) => {
       if (e.pointerId === activePointerId) {
         e.preventDefault();
         resetJoystick();
       }
+    };
+
+    // Attach listeners to both joystickZone and joystickBase
+    const touchElements = [joystickZone, joystickBase].filter(Boolean);
+    touchElements.forEach((el) => {
+      el.addEventListener('pointerdown', handlePointerDown);
+      el.addEventListener('pointermove', handlePointerMove);
+      el.addEventListener('pointerup', handlePointerUp);
+      el.addEventListener('pointercancel', handlePointerCancel);
+    });
+
+    // Safety resets on blur, lost capture, visibility change
+    window.addEventListener('blur', resetJoystick);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) resetJoystick();
     });
   }
 
-  // Touch Action Buttons
+  // Touch Action Buttons with Haptic Feedback
   if (btnTouchDash) {
     btnTouchDash.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       soundEngine.init();
       if (game.player) game.player.dash();
+      if (typeof navigator !== 'undefined' && navigator.vibrate && game.hapticsEnabled !== false) {
+        try { navigator.vibrate(15); } catch (_) {}
+      }
       btnTouchDash.classList.add('scale-90', 'brightness-125');
       setTimeout(() => btnTouchDash.classList.remove('scale-90', 'brightness-125'), 150);
     });
@@ -860,6 +976,9 @@ window.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       soundEngine.init();
       if (game.player) game.player.toggleBulletTime();
+      if (typeof navigator !== 'undefined' && navigator.vibrate && game.hapticsEnabled !== false) {
+        try { navigator.vibrate(10); } catch (_) {}
+      }
     });
   }
 
@@ -871,6 +990,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const res = game.player.useStoredMedkit();
         if (res) {
           soundEngine.playMedkitPickup();
+          if (typeof navigator !== 'undefined' && navigator.vibrate && game.hapticsEnabled !== false) {
+            try { navigator.vibrate(15); } catch (_) {}
+          }
         }
       }
     });
@@ -881,6 +1003,9 @@ window.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       soundEngine.init();
       game.isAutoAim = !game.isAutoAim;
+      if (typeof navigator !== 'undefined' && navigator.vibrate && game.hapticsEnabled !== false) {
+        try { navigator.vibrate(8); } catch (_) {}
+      }
       updateAutoAimUI();
       saveCentralSettings();
     });
@@ -892,6 +1017,22 @@ window.addEventListener('DOMContentLoaded', () => {
     selectTouchControls.addEventListener('change', () => {
       game.touchControlMode = selectTouchControls.value;
       updateMobileControlsVisibility();
+      saveCentralSettings();
+    });
+  }
+
+  if (selectJoystickType) {
+    selectJoystickType.value = game.joystickType || 'dynamic';
+    selectJoystickType.addEventListener('change', () => {
+      game.joystickType = selectJoystickType.value;
+      saveCentralSettings();
+    });
+  }
+
+  if (checkHapticFeedback) {
+    checkHapticFeedback.checked = game.hapticsEnabled !== false;
+    checkHapticFeedback.addEventListener('change', () => {
+      game.hapticsEnabled = checkHapticFeedback.checked;
       saveCentralSettings();
     });
   }
@@ -920,6 +1061,8 @@ window.addEventListener('DOMContentLoaded', () => {
         crtScanlines: crtOverlay ? !crtOverlay.classList.contains('hidden') : false,
         filterFavoriteOnly: filterFavoriteOnly ? filterFavoriteOnly.checked : false,
         touchControlMode: game.touchControlMode || 'auto',
+        joystickType: game.joystickType || 'dynamic',
+        hapticsEnabled: game.hapticsEnabled !== false,
         autoAim: Boolean(game.isAutoAim),
       };
       localStorage.setItem('cyber_central_settings', JSON.stringify(settingsToSave));
@@ -956,6 +1099,10 @@ window.addEventListener('DOMContentLoaded', () => {
             crtOverlay.classList.add('hidden');
           }
           if (checkCrtScanlines) checkCrtScanlines.checked = parsed.crtScanlines;
+        } else if (crtOverlay) {
+          // Default to Ultra-Sharp HD (CRT blur scanlines OFF)
+          crtOverlay.classList.add('hidden');
+          if (checkCrtScanlines) checkCrtScanlines.checked = false;
         }
 
         if (typeof parsed.filterFavoriteOnly === 'boolean' && filterFavoriteOnly) {
@@ -965,6 +1112,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (typeof parsed.touchControlMode === 'string') {
           game.touchControlMode = parsed.touchControlMode;
           if (selectTouchControls) selectTouchControls.value = parsed.touchControlMode;
+        }
+
+        if (typeof parsed.joystickType === 'string') {
+          game.joystickType = parsed.joystickType;
+          if (selectJoystickType) selectJoystickType.value = parsed.joystickType;
+        }
+
+        if (typeof parsed.hapticsEnabled === 'boolean') {
+          game.hapticsEnabled = parsed.hapticsEnabled;
+          if (checkHapticFeedback) checkHapticFeedback.checked = parsed.hapticsEnabled;
         }
 
         if (typeof parsed.autoAim === 'boolean') {

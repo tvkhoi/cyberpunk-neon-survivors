@@ -144,6 +144,53 @@
     .eq-bar-3 { animation: eqPulse 0.48s ease-in-out infinite 0.3s; }
     .eq-bar-4 { animation: eqPulse 0.65s ease-in-out infinite 0.1s; }
 
+    /* Dynamic Viewport (100dvh) & Notch Safe Area Tokens */
+    :root {
+      --app-height: 100dvh;
+      --app-width: 100dvw;
+      --vh: 1vh;
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+    html, body {
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      overscroll-behavior: none;
+      width: 100%;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      height: 100dvh;
+      min-height: -webkit-fill-available;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      font-family: 'Be Vietnam Pro', 'Rajdhani', sans-serif;
+      background-color: #05070f;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
+      height: 100dvh;
+      touch-action: none;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: auto;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
     /* Touch Controls Enhancements */
     .touch-btn {
       touch-action: manipulation;
@@ -161,60 +208,141 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
-      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.15);
-      border: 2px solid rgba(0, 240, 255, 0.5);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.35), inset 0 0 15px rgba(0, 240, 255, 0.2);
+      border: 2px solid rgba(0, 240, 255, 0.6);
+      will-change: transform, box-shadow;
     }
     .joystick-knob {
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.7);
       will-change: transform;
     }
+
+    /* Anti-Notch Safe Area Padding Rules with Absolute Specificity */
     .safe-top {
       padding-top: max(0.5rem, env(safe-area-inset-top));
+      padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
     }
     .safe-bottom {
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
     }
     .safe-left {
-      padding-left: max(0.5rem, env(safe-area-inset-left));
+      padding-left: max(0.75rem, env(safe-area-inset-left));
+      padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
     }
     .safe-right {
-      padding-right: max(0.5rem, env(safe-area-inset-right));
+      padding-right: max(0.75rem, env(safe-area-inset-right));
+      padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
     }
+    .safe-area-all {
+      padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
+      padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    /* Dedicated Anti-Notch Bounds for Mobile Touch Controls */
+    #mobileControls {
+      padding-bottom: max(0.85rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem)) !important;
+      padding-left: max(0.85rem, calc(env(safe-area-inset-left, 0px) + 0.5rem)) !important;
+      padding-right: max(0.85rem, calc(env(safe-area-inset-right, 0px) + 0.5rem)) !important;
+      padding-top: max(0.5rem, env(safe-area-inset-top, 0px)) !important;
+    }
+
+    /* Anti-Notch Bounds for HUD Header */
+    #hud {
+      padding-top: max(0.5rem, calc(env(safe-area-inset-top, 0px) + 0.25rem)) !important;
+      padding-bottom: max(0.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.25rem)) !important;
+      padding-left: max(0.6rem, calc(env(safe-area-inset-left, 0px) + 0.35rem)) !important;
+      padding-right: max(0.6rem, calc(env(safe-area-inset-right, 0px) + 0.35rem)) !important;
+    }
+
     /* Pseudo-fullscreen fallback for iOS Safari handhelds */
     .pseudo-fullscreen, body.pseudo-fullscreen-active {
       position: fixed !important;
       inset: 0 !important;
       width: 100vw !important;
+      width: 100dvw !important;
       height: 100vh !important;
+      height: calc(var(--vh, 1vh) * 100) !important;
+      height: 100dvh !important;
       z-index: 99999 !important;
       overflow: hidden !important;
     }
+
+    @keyframes cyberPhoneRotate {
+      0%, 25% { transform: rotate(0deg) scale(1); }
+      50%, 75% { transform: rotate(-90deg) scale(1.06); }
+      95%, 100% { transform: rotate(0deg) scale(1); }
+    }
+    .animate-cyber-phone-rotate {
+      animation: cyberPhoneRotate 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
   </style>
 </head>
-<body class="relative w-screen h-screen m-0 p-0 text-slate-100 overflow-hidden select-none touch-none">
-  <!-- Portrait Mode Landscape Advisory Overlay (Mobile Guard) -->
-  <div id="portraitAdvisoryOverlay" class="hidden fixed inset-0 z-50 bg-[#05070f]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center select-none safe-top safe-bottom safe-left safe-right">
-    <div class="relative mb-6">
-      <!-- Rotating Phone Cyberpunk Animation -->
-      <div class="w-16 h-28 xs:w-20 xs:h-36 border-2 border-cyan-400 rounded-2xl flex items-center justify-center relative animate-pulse shadow-lg shadow-cyan-500/30 bg-slate-900/60">
-        <div class="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute top-2"></div>
-        <i class="fa-solid fa-mobile-screen-button text-cyan-300 text-3xl xs:text-4xl animate-bounce"></i>
-        <div class="w-6 h-1 rounded-full bg-cyan-400 absolute bottom-2"></div>
+<body class="relative w-screen h-screen h-[100dvh] min-h-[100dvh] m-0 p-0 text-slate-100 overflow-hidden select-none touch-none">
+  <!-- Portrait Mode Landscape Advisory Overlay (Module 2: Cyberpunk Portrait Overlay & UX Guard) -->
+  <div id="portraitAdvisoryOverlay" class="hidden fixed inset-0 z-50 bg-[#05070f]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 sm:p-6 text-center select-none safe-top safe-bottom safe-left safe-right transition-all duration-300">
+    <div class="max-w-md w-full hologram-glass p-6 sm:p-8 rounded-2xl neon-border-cyan flex flex-col items-center space-y-4 shadow-2xl shadow-cyan-950/90 relative overflow-hidden">
+      
+      <!-- Top Decorative Cyber Decal Bar -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+
+      <!-- Animated Rotating Phone Cyberpunk Hologram -->
+      <div class="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center my-1">
+        <!-- Outer Glowing Pulse Rings -->
+        <div class="absolute inset-0 rounded-full border border-cyan-500/20 animate-ping"></div>
+        <div class="absolute inset-2 rounded-full border border-pink-500/30 animate-pulse"></div>
+        
+        <!-- Rotating Holographic Phone -->
+        <div class="relative w-12 h-20 sm:w-14 sm:h-24 rounded-xl border-2 border-cyan-400 bg-slate-900/80 shadow-lg shadow-cyan-500/40 flex flex-col items-center justify-between p-1.5 transition-transform duration-700 animate-cyber-phone-rotate">
+          <div class="w-4 h-1 rounded-full bg-cyan-400/80"></div>
+          <i class="fa-solid fa-gamepad text-cyan-300 text-lg sm:text-xl"></i>
+          <div class="w-2 h-2 rounded-full border border-cyan-400/80"></div>
+        </div>
+
+        <!-- Ambient Rotate Arrows Badge -->
+        <div class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-slate-900 border border-amber-400 text-amber-400 flex items-center justify-center text-sm shadow-md shadow-amber-500/30 animate-spin" style="animation-duration: 4s;">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </div>
       </div>
-      <i class="fa-solid fa-arrows-rotate text-amber-400 text-2xl absolute -bottom-2 -right-2 animate-spin" style="animation-duration: 3s;"></i>
+
+      <!-- Sci-Fi Protocol Chip -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-[9px] sm:text-[10px] font-bold font-scifi tracking-widest text-cyan-400 uppercase">
+        <i class="fa-solid fa-shield-halved text-cyan-300 animate-pulse"></i>
+        <span>UX GUARD // BẢO VỆ CHIẾN BINH</span>
+      </div>
+
+      <!-- Main Instruction Headlines -->
+      <div>
+        <h2 class="text-lg xs:text-xl sm:text-2xl font-black font-scifi text-white neon-text-cyan leading-tight">
+          VUI LÒNG XOAY NGANG THIẾT BỊ
+        </h2>
+        <div class="text-[10px] sm:text-xs font-hud text-amber-400 tracking-widest uppercase mt-0.5">
+          ROTATE DEVICE TO LANDSCAPE (16:9)
+        </div>
+        <p class="text-[11px] sm:text-xs text-slate-300 font-desc max-w-xs mx-auto mt-2 leading-relaxed">
+          Góc nhìn chiến thuật 16:9 mở rộng tầm bao quát radar Neo-Saigon, tối ưu hóa hệ thống tự ngắm và cụm cần ảo 360° kép.
+        </p>
+      </div>
+
+      <!-- UX Guard Status Notice -->
+      <div class="w-full py-1.5 px-3 rounded-lg bg-rose-950/50 border border-rose-500/40 text-[10px] sm:text-xs font-hud text-rose-300 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-pause text-rose-400 animate-pulse"></i>
+        <span>TRẬN ĐẤU ĐÃ TỰ ĐỘNG TẠM DỪNG AN TOÀN</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="w-full space-y-2 pt-1">
+        <button id="btnForceFullscreenRotate" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-hud font-bold py-2.5 sm:py-3 px-4 rounded-xl text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/50 cursor-pointer active:scale-95 transition">
+          <i class="fa-solid fa-expand"></i> KÍCH HOẠT TOÀN MÀN HÌNH & XOAY NGANG
+        </button>
+        <button id="btnBypassOrientationPrompt" class="w-full bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/80 py-2 px-3 rounded-xl font-hud text-xs cursor-pointer active:scale-95 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-angles-right text-[10px]"></i> Bỏ qua & tiếp tục chơi ở chế độ dọc (Override)
+        </button>
+      </div>
+
     </div>
-    <div class="text-[10px] sm:text-xs font-bold font-scifi tracking-widest text-cyan-400 uppercase mb-1">
-      [ HỆ THỐNG CHIẾN ĐẤU YÊU CẦU ]
-    </div>
-    <h2 class="text-lg xs:text-xl sm:text-2xl font-black font-scifi text-white neon-text-cyan mb-2">
-      VUI LÒNG XOAY NGANG THIẾT BỊ
-    </h2>
-    <p class="text-[11px] xs:text-xs text-slate-300 font-desc max-w-xs mb-5 leading-relaxed">
-      Để hiển thị radar chiến trường toàn cảnh, điều khiển Cần ảo chuẩn xác và kích hoạt chế độ toàn màn hình.
-    </p>
-    <button id="btnForceFullscreenRotate" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-hud font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-cyan-500/50 cursor-pointer active:scale-95 transition">
-      <i class="fa-solid fa-expand"></i> Kích Hoạt Toàn Màn Hình & Xoay Ngang
-    </button>
   </div>
 
 
@@ -222,7 +350,7 @@
   <canvas id="gameCanvas" class="block w-full h-full"></canvas>
 
   <!-- CRT Scanline Retro Arcade Vignette Overlay -->
-  <div id="crtOverlay" class="absolute inset-0 crt-overlay z-30 pointer-events-none"></div>
+  <div id="crtOverlay" class="hidden absolute inset-0 crt-overlay z-30 pointer-events-none"></div>
 
   <!-- HUD Overlay -->
   <div id="hud" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-1.5 xs:p-2.5 sm:p-4 md:p-6 pb-2 safe-top safe-bottom safe-left safe-right z-10">
@@ -532,13 +660,16 @@
   <div id="mobileControls" class="pointer-events-none fixed inset-0 z-20 flex justify-between items-end p-2 xs:p-3 sm:p-6 pb-3 xs:pb-4 sm:pb-6 select-none safe-bottom safe-left safe-right">
     
     <!-- Virtual Joystick (Left Hand) -->
-    <div id="joystickZone" class="pointer-events-auto relative touch-none flex items-center justify-center">
-      <div id="joystickBase" class="joystick-base w-20 h-20 xs:w-24 xs:h-24 sm:w-32 sm:h-32 rounded-full bg-slate-950/60 backdrop-blur-md flex items-center justify-center relative cursor-pointer">
-        <span class="absolute top-1 text-[8px] text-cyan-500/60 flex items-center justify-center"><i class="fa-solid fa-caret-up"></i></span>
-        <span class="absolute bottom-1 text-[8px] text-cyan-500/60 flex items-center justify-center"><i class="fa-solid fa-caret-down"></i></span>
-        <span class="absolute left-1 text-[8px] text-cyan-500/60 flex items-center justify-center"><i class="fa-solid fa-caret-left"></i></span>
-        <span class="absolute right-1 text-[8px] text-cyan-500/60 flex items-center justify-center"><i class="fa-solid fa-caret-right"></i></span>
+    <div id="joystickZone" class="pointer-events-auto relative touch-none flex items-center justify-center w-36 h-36 xs:w-44 xs:h-44 sm:w-56 sm:h-56">
+      <div id="joystickBase" class="joystick-base w-20 h-20 xs:w-24 xs:h-24 sm:w-32 sm:h-32 rounded-full bg-slate-950/60 backdrop-blur-md flex items-center justify-center relative cursor-pointer select-none">
+        <span id="joyArrowUp" class="absolute top-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center"><i class="fa-solid fa-caret-up"></i></span>
+        <span id="joyArrowDown" class="absolute bottom-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center"><i class="fa-solid fa-caret-down"></i></span>
+        <span id="joyArrowLeft" class="absolute left-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center"><i class="fa-solid fa-caret-left"></i></span>
+        <span id="joyArrowRight" class="absolute right-1 text-[8px] text-cyan-500/40 transition-all flex items-center justify-center"><i class="fa-solid fa-caret-right"></i></span>
         
+        <!-- Deadzone indicator center ring -->
+        <div class="w-4 h-4 rounded-full border border-cyan-500/20 pointer-events-none absolute"></div>
+
         <div id="joystickKnob" class="joystick-knob w-9 h-9 xs:w-11 xs:h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-cyan-400 via-cyan-500 to-blue-600 border-2 border-white/70 flex items-center justify-center text-slate-950 text-xs font-bold transition-transform duration-75">
           <i class="fa-solid fa-gamepad text-slate-950 text-[10px] sm:text-xs"></i>
         </div>
@@ -588,7 +719,7 @@
 
   <!-- Centralized Settings & Cyber Jukebox Modal Overlay -->
   <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 safe-top safe-bottom safe-left safe-right">
-    <div class="max-w-3xl w-[94vw] sm:w-full max-h-[90vh] flex flex-col hologram-glass rounded-2xl neon-border-cyan overflow-hidden shadow-2xl shadow-cyan-950/60">
+    <div class="max-w-3xl w-[94vw] sm:w-full max-h-[92dvh] flex flex-col hologram-glass rounded-2xl neon-border-cyan overflow-hidden shadow-2xl shadow-cyan-950/60">
       
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-slate-800 px-3 py-2.5 sm:px-6 sm:py-4 bg-slate-950/60 flex-shrink-0">
@@ -815,6 +946,18 @@
                 <p class="text-[9px] sm:text-[11px] text-slate-400 font-desc">Hỗ trợ cần xoay joystick 360° và các phím Dash / Slow Mo / Medkit cảm ứng.</p>
               </div>
 
+              <!-- Joystick Mode (Dynamic Floating vs Fixed Base) -->
+              <div class="space-y-1 sm:space-y-1.5 p-2 sm:p-3 rounded-lg bg-slate-950/50 border border-slate-800/60">
+                <label class="text-[11px] sm:text-xs font-hud font-bold text-slate-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrows-to-dot text-cyan-400"></i> CHẾ ĐỘ CẦN GẠT JOYSTICK:
+                </label>
+                <select id="selectJoystickType" class="w-full bg-slate-900 border border-slate-700 px-2.5 py-1.5 sm:py-2 rounded-lg font-desc text-xs text-cyan-300 focus:outline-none focus:border-cyan-400">
+                  <option value="dynamic">Linh hoạt nổi (Tự bám theo ngón tay chạm)</option>
+                  <option value="static">Cố định (Neo tại góc dưới bên trái)</option>
+                </select>
+                <p class="text-[9px] sm:text-[11px] text-slate-400 font-desc">Chế độ nổi giúp di chuyển tự nhiên và không bao giờ trượt ngón tay.</p>
+              </div>
+
               <!-- Auto-Aim Feature Setting -->
               <div class="space-y-1.5 sm:space-y-2 p-2 sm:p-3 rounded-lg bg-slate-950/50 border border-slate-800/60 flex flex-col justify-between">
                 <div class="flex items-center justify-between">
@@ -824,6 +967,17 @@
                   <input id="checkAutoAim" type="checkbox" class="accent-cyan-400 w-4 h-4 cursor-pointer" checked />
                 </div>
                 <p class="text-[9px] sm:text-[11px] text-slate-400 font-desc">Tự động xoay nòng súng vào quái vật gần nhất (rất thuận tiện khi chơi trên điện thoại).</p>
+              </div>
+
+              <!-- Haptic Feedback Setting -->
+              <div class="space-y-1.5 sm:space-y-2 p-2 sm:p-3 rounded-lg bg-slate-950/50 border border-slate-800/60 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] sm:text-xs font-hud font-bold text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-mobile-screen-button text-pink-400"></i> RUNG XÚC GIÁC (HAPTIC FEEDBACK):
+                  </span>
+                  <input id="checkHapticFeedback" type="checkbox" class="accent-cyan-400 w-4 h-4 cursor-pointer" checked />
+                </div>
+                <p class="text-[9px] sm:text-[11px] text-slate-400 font-desc">Rung phản hồi micro-vibrate khi bẻ kịch cần joystick, lướt Dash và bơm Medkit.</p>
               </div>
 
               <!-- Target FPS -->
@@ -842,7 +996,7 @@
               <div class="space-y-1.5 sm:space-y-2 p-2 sm:p-3 rounded-lg bg-slate-950/50 border border-slate-800/60 flex flex-col justify-between">
                 <div class="flex items-center justify-between">
                   <span class="text-[11px] sm:text-xs font-hud font-bold text-slate-300">HIỆU ỨNG CRT SCANLINES RETRO:</span>
-                  <input id="checkCrtScanlines" type="checkbox" checked class="accent-cyan-400 w-4 h-4 cursor-pointer" />
+                  <input id="checkCrtScanlines" type="checkbox" class="accent-cyan-400 w-4 h-4 cursor-pointer" />
                 </div>
                 <p class="text-[9px] sm:text-[11px] text-slate-400 font-desc">Lưới quét sọc ngang hoài niệm của máy game thùng Arcade.</p>
               </div>
@@ -933,7 +1087,7 @@
 
   <!-- Character Customization Modal Overlay -->
   <div id="profileModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 safe-top safe-bottom safe-left safe-right">
-    <div class="max-w-2xl w-[94vw] sm:w-full max-h-[90vh] overflow-y-auto hologram-glass p-3.5 sm:p-7 rounded-2xl neon-border-cyan space-y-3 sm:space-y-6 custom-scroll">
+    <div class="max-w-2xl w-[94vw] sm:w-full max-h-[92dvh] overflow-y-auto hologram-glass p-3.5 sm:p-7 rounded-2xl neon-border-cyan space-y-3 sm:space-y-6 custom-scroll">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 sm:pb-3">
         <div>
           <div class="text-[8px] sm:text-xs font-bold font-scifi text-amber-400 tracking-widest uppercase">PILOT CUSTOMIZATION</div>
@@ -968,7 +1122,7 @@
 
   <!-- Victory & Extraction Modal -->
   <div id="victoryModal" class="hidden fixed inset-0 z-40 bg-black/90 backdrop-blur-lg flex items-center justify-center p-2 sm:p-4 safe-top safe-bottom safe-left safe-right">
-    <div class="max-w-lg w-[94vw] sm:w-full max-h-[90vh] overflow-y-auto hologram-glass p-3.5 xs:p-4 sm:p-8 rounded-2xl neon-border-cyan text-center space-y-3 sm:space-y-6 custom-scroll">
+    <div class="max-w-lg w-[94vw] sm:w-full max-h-[92dvh] overflow-y-auto hologram-glass p-3.5 xs:p-4 sm:p-8 rounded-2xl neon-border-cyan text-center space-y-3 sm:space-y-6 custom-scroll">
       <div>
         <span class="text-3xl sm:text-5xl text-emerald-400"><i class="fa-solid fa-trophy"></i></span>
         <h2 class="text-xl sm:text-3xl font-black font-scifi text-emerald-400 mt-1 sm:mt-2 neon-text-cyan">SECTOR LIBERATED!</h2>
@@ -1008,7 +1162,7 @@
 
   <!-- Game Over & Leaderboard Modal -->
   <div id="gameOverModal" class="hidden fixed inset-0 z-40 bg-black/90 backdrop-blur-lg flex items-center justify-center p-2 sm:p-4 safe-top safe-bottom safe-left safe-right">
-    <div class="max-w-lg w-[94vw] sm:w-full max-h-[90vh] overflow-y-auto hologram-glass p-3.5 xs:p-4 sm:p-8 rounded-2xl neon-border-magenta text-center space-y-3 sm:space-y-6 custom-scroll">
+    <div class="max-w-lg w-[94vw] sm:w-full max-h-[92dvh] overflow-y-auto hologram-glass p-3.5 xs:p-4 sm:p-8 rounded-2xl neon-border-magenta text-center space-y-3 sm:space-y-6 custom-scroll">
       <div>
         <span class="text-3xl sm:text-5xl text-rose-500"><i class="fa-solid fa-skull"></i></span>
         <h2 class="text-xl sm:text-3xl font-black font-scifi text-rose-500 mt-1 sm:mt-2">FLATLINED (GAME OVER)</h2>
@@ -1053,39 +1207,6 @@
       <button onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-cyan-500/50 py-2 sm:py-3 rounded-xl font-hud font-bold text-xs sm:text-sm tracking-wider cursor-pointer transition flex items-center justify-center gap-2">
         <i class="fa-solid fa-rotate-right"></i> TÁI SINH TRẬN MỚI
       </button>
-    </div>
-  </div>
-
-  <!-- Portrait Orientation Prompt Overlay (Module 1: Mobile Fullscreen & Orientation Lock Engine) -->
-  <div id="portraitOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-5 text-center select-none safe-top safe-bottom safe-left safe-right transition-all duration-300">
-    <div class="max-w-md w-full hologram-glass p-6 rounded-2xl neon-border-cyan flex flex-col items-center space-y-4 shadow-2xl shadow-cyan-950/80">
-      
-      <!-- Animated Rotating Phone Icon -->
-      <div class="relative w-20 h-20 flex items-center justify-center">
-        <div class="absolute inset-0 rounded-full bg-cyan-500/10 animate-ping"></div>
-        <div class="relative w-16 h-16 rounded-2xl border-2 border-cyan-400 flex items-center justify-center bg-cyan-950/40 text-cyan-300 text-2xl shadow-lg shadow-cyan-500/30 transform transition-transform duration-700 animate-pulse">
-          <i class="fa-solid fa-mobile-screen-button transform rotate-90"></i>
-        </div>
-      </div>
-
-      <div>
-        <div class="text-[9px] sm:text-xs font-bold font-scifi text-amber-400 tracking-widest uppercase">ORIENTATION MATRIX // THIẾT BỊ DI ĐỘNG</div>
-        <h3 class="text-base sm:text-xl font-black font-hud text-white mt-1 neon-text-cyan">VUI LÒNG XOAY NGANG MÀN HÌNH</h3>
-        <p class="text-xs text-slate-300 font-desc mt-1.5 leading-relaxed">
-          Cyberpunk Neon Survivors được thiết kế tối ưu cho góc nhìn chiến thuật ngang <span class="text-cyan-300 font-bold">(Landscape 16:9)</span> để bao quát quái vật và điều khiển cần ảo 360° dễ dàng nhất.
-        </p>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="w-full space-y-2 pt-2">
-        <button id="btnPortraitLockLandscape" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold font-hud py-2.5 px-4 rounded-xl text-xs sm:text-sm cursor-pointer shadow-lg shadow-cyan-900/50 active:scale-95 transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-expand"></i> KHÓA XOAY NGANG & TOÀN MÀN HÌNH
-        </button>
-        <button id="btnDismissPortraitOverlay" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 py-1.5 px-3 rounded-xl font-hud text-xs cursor-pointer active:scale-95 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-arrow-right"></i> Bỏ qua, tiếp tục chơi dọc
-        </button>
-      </div>
-
     </div>
   </div>
 

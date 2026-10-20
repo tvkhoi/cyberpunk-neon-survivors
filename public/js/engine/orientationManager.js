@@ -19,29 +19,32 @@ export const ORIENTATION_TYPES = {
  * 3. CSS MatchMedia query: (orientation: landscape) vs (orientation: portrait)
  * 4. Viewport Dimensions: (innerWidth >= innerHeight)
  */
-export function detectOrientationState(win = typeof window !== 'undefined' ? window : null, scr = typeof screen !== 'undefined' ? screen : null) {
+export function detectOrientationState(win = null, scr = null) {
+  const targetWin = win || (typeof window !== 'undefined' ? window : null);
+  const targetScr = scr || targetWin?.screen || (typeof screen !== 'undefined' ? screen : null);
+
   let isLandscape = false;
   let angle = 0;
   let orientationType = ORIENTATION_TYPES.LANDSCAPE;
 
   // Tier 1: Modern Screen Orientation API
-  if (scr && scr.orientation && typeof scr.orientation.type === 'string') {
-    orientationType = scr.orientation.type;
-    angle = scr.orientation.angle || 0;
+  if (targetScr && targetScr.orientation && typeof targetScr.orientation.type === 'string') {
+    orientationType = targetScr.orientation.type;
+    angle = targetScr.orientation.angle || 0;
     isLandscape = orientationType.startsWith('landscape');
   }
   // Tier 2: Legacy window.orientation (iOS Safari, older Android WebViews)
-  else if (win && typeof win.orientation === 'number') {
-    angle = win.orientation;
+  else if (targetWin && typeof targetWin.orientation === 'number') {
+    angle = targetWin.orientation;
     isLandscape = Math.abs(angle) === 90 || angle === 270;
     orientationType = isLandscape
       ? (angle === 90 ? ORIENTATION_TYPES.LANDSCAPE_PRIMARY : ORIENTATION_TYPES.LANDSCAPE_SECONDARY)
       : (angle === 180 ? ORIENTATION_TYPES.PORTRAIT_SECONDARY : ORIENTATION_TYPES.PORTRAIT_PRIMARY);
   }
   // Tier 3: CSS MatchMedia query
-  else if (win && typeof win.matchMedia === 'function') {
+  else if (targetWin && typeof targetWin.matchMedia === 'function') {
     try {
-      const mql = win.matchMedia('(orientation: landscape)');
+      const mql = targetWin.matchMedia('(orientation: landscape)');
       if (mql && typeof mql.matches === 'boolean') {
         isLandscape = mql.matches;
         orientationType = isLandscape ? ORIENTATION_TYPES.LANDSCAPE : ORIENTATION_TYPES.PORTRAIT;
@@ -52,9 +55,9 @@ export function detectOrientationState(win = typeof window !== 'undefined' ? win
   }
 
   // Tier 4: Fallback to Viewport Aspect Ratio / Dimensions
-  if (!orientationType || (scr == null && (win == null || typeof win.orientation !== 'number'))) {
-    const width = win?.innerWidth ?? 1280;
-    const height = win?.innerHeight ?? 720;
+  if (!orientationType || (targetScr == null || !targetScr.orientation) && (targetWin == null || typeof targetWin.orientation !== 'number')) {
+    const width = targetWin?.innerWidth ?? 1280;
+    const height = targetWin?.innerHeight ?? 720;
     isLandscape = width >= height;
     orientationType = isLandscape ? ORIENTATION_TYPES.LANDSCAPE : ORIENTATION_TYPES.PORTRAIT;
   }
@@ -64,45 +67,50 @@ export function detectOrientationState(win = typeof window !== 'undefined' ? win
     isPortrait: !isLandscape,
     orientationType,
     angle,
-    aspectRatio: win ? ((win.innerWidth || 1) / (win.innerHeight || 1)) : 16 / 9,
+    aspectRatio: targetWin ? ((targetWin.innerWidth || 1) / (targetWin.innerHeight || 1)) : 16 / 9,
   };
 }
 
 /**
  * Checks whether the current runtime is a mobile or touch-capable handheld device.
  */
-export function isTouchOrMobileDevice(win = typeof window !== 'undefined' ? window : null, nav = typeof navigator !== 'undefined' ? navigator : null) {
-  if (!win) return false;
-  const hasTouchEvents = 'ontouchstart' in win;
-  const maxTouchPoints = nav?.maxTouchPoints ?? 0;
+export function isTouchOrMobileDevice(win = null, nav = null) {
+  const targetWin = win || (typeof window !== 'undefined' ? window : null);
+  const targetNav = nav || (typeof navigator !== 'undefined' ? navigator : null);
+  if (!targetWin) return false;
+
+  const hasTouch = ('ontouchstart' in targetWin) || ((targetNav?.maxTouchPoints ?? 0) > 0);
   let matchesPointerCoarse = false;
 
-  if (typeof win.matchMedia === 'function') {
+  if (typeof targetWin.matchMedia === 'function') {
     try {
-      matchesPointerCoarse = win.matchMedia('(pointer: coarse)').matches;
+      matchesPointerCoarse = targetWin.matchMedia('(pointer: coarse)').matches;
     } catch (_) {}
   }
 
-  const isSmallScreen = (win.innerWidth || 0) <= 1024;
-  return hasTouchEvents || maxTouchPoints > 0 || matchesPointerCoarse || (isSmallScreen && hasTouchEvents);
+  const isSmallScreen = Math.min(targetWin.innerWidth || 0, targetWin.innerHeight || 0) <= 900;
+  const isMobileUA = Boolean(targetNav?.userAgent && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(targetNav.userAgent));
+
+  return Boolean((hasTouch || matchesPointerCoarse) && (isSmallScreen || isMobileUA));
 }
 
 /**
  * Cross-browser Fullscreen capability detection & vendor prefix abstraction
  */
-export function checkFullscreenSupport(doc = typeof document !== 'undefined' ? document : null, el = null) {
-  if (!doc) return { supported: false, vendor: 'none' };
+export function checkFullscreenSupport(doc = null, el = null) {
+  const targetDoc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!targetDoc) return { supported: false, vendor: 'none' };
 
-  if ('fullscreenEnabled' in doc || 'requestFullscreen' in (el || doc.documentElement || {})) {
+  if ('fullscreenEnabled' in targetDoc || 'requestFullscreen' in (el || targetDoc.documentElement || {})) {
     return { supported: true, vendor: 'standard' };
   }
-  if ('webkitFullscreenEnabled' in doc || 'webkitRequestFullscreen' in (el || doc.documentElement || {})) {
+  if ('webkitFullscreenEnabled' in targetDoc || 'webkitRequestFullscreen' in (el || targetDoc.documentElement || {})) {
     return { supported: true, vendor: 'webkit' };
   }
-  if ('mozFullScreenEnabled' in doc || 'mozRequestFullScreen' in (el || doc.documentElement || {})) {
+  if ('mozFullScreenEnabled' in targetDoc || 'mozRequestFullScreen' in (el || targetDoc.documentElement || {})) {
     return { supported: true, vendor: 'moz' };
   }
-  if ('msFullscreenEnabled' in doc || 'msRequestFullscreen' in (el || doc.documentElement || {})) {
+  if ('msFullscreenEnabled' in targetDoc || 'msRequestFullscreen' in (el || targetDoc.documentElement || {})) {
     return { supported: true, vendor: 'ms' };
   }
 
@@ -164,11 +172,7 @@ export function calculateSafeAreaRect({
  */
 export class MobileOrientationManager {
   constructor(options = {}) {
-    this.win = options.win || (typeof window !== 'undefined' ? window : null);
-    this.doc = options.doc || (typeof document !== 'undefined' ? document : null);
-    this.nav = options.nav || (typeof navigator !== 'undefined' ? navigator : null);
-    this.scr = options.scr || (typeof screen !== 'undefined' ? screen : null);
-
+    this.options = options;
     this.promptElement = options.promptElement || null;
     this.fullscreenBtn = options.fullscreenBtn || null;
     this.bypassPrompt = Boolean(options.bypassPrompt);
@@ -192,11 +196,27 @@ export class MobileOrientationManager {
     this.debounceDelay = options.debounceDelay ?? 150; // 150ms debounce for iOS Safari viewport stabilization
   }
 
+  get currentWin() {
+    return this.options.win || (typeof window !== 'undefined' ? window : null);
+  }
+
+  get currentDoc() {
+    return this.options.doc || (typeof document !== 'undefined' ? document : null);
+  }
+
+  get currentNav() {
+    return this.options.nav || (typeof navigator !== 'undefined' ? navigator : null);
+  }
+
+  get currentScr() {
+    return this.options.scr || this.currentWin?.screen || (typeof screen !== 'undefined' ? screen : null);
+  }
+
   /**
    * Reads current orientation state
    */
   getState() {
-    return detectOrientationState(this.win, this.scr);
+    return detectOrientationState(this.currentWin, this.currentScr);
   }
 
   /**
@@ -217,8 +237,8 @@ export class MobileOrientationManager {
    * Returns current aspect ratio (width / height)
    */
   getAspectRatio() {
-    const w = this.win?.innerWidth || 1280;
-    const h = this.win?.innerHeight || 720;
+    const w = this.currentWin?.innerWidth || 1280;
+    const h = this.currentWin?.innerHeight || 720;
     return w / h;
   }
 
@@ -227,7 +247,7 @@ export class MobileOrientationManager {
    */
   shouldShowPrompt() {
     if (this.bypassPrompt) return false;
-    const isMobile = isTouchOrMobileDevice(this.win, this.nav);
+    const isMobile = isTouchOrMobileDevice(this.currentWin, this.currentNav);
     const state = this.getState();
 
     // Show prompt only if on mobile/touch device AND currently in Portrait mode
@@ -261,13 +281,14 @@ export class MobileOrientationManager {
    * Attempts to lock the screen to landscape using Screen Orientation API
    */
   async lockLandscape() {
+    const scr = this.currentScr;
     try {
-      if (this.scr?.orientation && typeof this.scr.orientation.lock === 'function') {
-        await this.scr.orientation.lock('landscape');
+      if (scr?.orientation && typeof scr.orientation.lock === 'function') {
+        await scr.orientation.lock('landscape');
         return true;
       }
-      if (this.scr && typeof this.scr.lockOrientation === 'function') {
-        return this.scr.lockOrientation('landscape');
+      if (scr && typeof scr.lockOrientation === 'function') {
+        return scr.lockOrientation('landscape');
       }
     } catch (err) {
       // Many mobile browsers reject lock() unless in fullscreen or PWA mode
@@ -281,13 +302,14 @@ export class MobileOrientationManager {
    */
   isFullscreen() {
     if (this.pseudoFullscreenActive) return true;
-    if (!this.doc) return false;
+    const doc = this.currentDoc;
+    if (!doc) return false;
 
     return Boolean(
-      this.doc.fullscreenElement ||
-      this.doc.webkitFullscreenElement ||
-      this.doc.mozFullScreenElement ||
-      this.doc.msFullscreenElement
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
     );
   }
 
@@ -295,7 +317,8 @@ export class MobileOrientationManager {
    * Requests Fullscreen on target element with multi-vendor and pseudo-fullscreen fallback
    */
   async requestFullscreen(targetElement = null) {
-    const el = targetElement || this.doc?.documentElement;
+    const doc = this.currentDoc;
+    const el = targetElement || doc?.documentElement;
     if (!el) return false;
 
     try {
@@ -340,26 +363,27 @@ export class MobileOrientationManager {
       return true;
     }
 
-    if (!this.doc) return false;
+    const doc = this.currentDoc;
+    if (!doc) return false;
 
     try {
-      if (this.doc.exitFullscreen) {
-        await this.doc.exitFullscreen();
+      if (doc.exitFullscreen) {
+        await doc.exitFullscreen();
         this._notifyFullscreen(false);
         return true;
       }
-      if (this.doc.webkitExitFullscreen) {
-        await this.doc.webkitExitFullscreen();
+      if (doc.webkitExitFullscreen) {
+        await doc.webkitExitFullscreen();
         this._notifyFullscreen(false);
         return true;
       }
-      if (this.doc.mozCancelFullScreen) {
-        await this.doc.mozCancelFullScreen();
+      if (doc.mozCancelFullScreen) {
+        await doc.mozCancelFullScreen();
         this._notifyFullscreen(false);
         return true;
       }
-      if (this.doc.msExitFullscreen) {
-        await this.doc.msExitFullscreen();
+      if (doc.msExitFullscreen) {
+        await doc.msExitFullscreen();
         this._notifyFullscreen(false);
         return true;
       }
@@ -386,7 +410,7 @@ export class MobileOrientationManager {
    */
   enablePseudoFullscreen(el = null) {
     this.pseudoFullscreenActive = true;
-    const target = el || this.doc?.documentElement;
+    const target = el || this.currentDoc?.documentElement;
     if (target?.classList) {
       target.classList.add('pseudo-fullscreen');
     }
@@ -395,7 +419,7 @@ export class MobileOrientationManager {
 
   disablePseudoFullscreen(el = null) {
     this.pseudoFullscreenActive = false;
-    const target = el || this.doc?.documentElement;
+    const target = el || this.currentDoc?.documentElement;
     if (target?.classList) {
       target.classList.remove('pseudo-fullscreen');
     }
@@ -438,11 +462,13 @@ export class MobileOrientationManager {
    * Automatically inspects computed CSS safe-area-insets or uses orientation heuristic
    */
   computeSafeAreaInsets() {
-    if (!this.win || !this.doc) return this.safeAreaInsets;
+    const win = this.currentWin;
+    const doc = this.currentDoc;
+    if (!win || !doc) return this.safeAreaInsets;
 
     // Check if CSS env variables are simulated in style
     try {
-      const computed = this.win.getComputedStyle(this.doc.documentElement);
+      const computed = win.getComputedStyle(doc.documentElement);
       const top = parseFloat(computed.getPropertyValue('--safe-area-top') || computed.getPropertyValue('padding-top') || '0');
       const right = parseFloat(computed.getPropertyValue('--safe-area-right') || computed.getPropertyValue('padding-right') || '0');
       const bottom = parseFloat(computed.getPropertyValue('--safe-area-bottom') || computed.getPropertyValue('padding-bottom') || '0');
@@ -456,7 +482,7 @@ export class MobileOrientationManager {
 
     // Fallback heuristic based on orientation & device
     const state = this.getState();
-    const isMobile = isTouchOrMobileDevice(this.win, this.nav);
+    const isMobile = isTouchOrMobileDevice(this.currentWin, this.currentNav);
 
     if (isMobile) {
       // iPhone / Android Notch in Landscape
@@ -483,8 +509,8 @@ export class MobileOrientationManager {
    * Computes Safe Boundary Zone for HUD and Virtual Touch Controllers
    */
   getSafeBounds(minMargin = 12) {
-    const width = this.win?.innerWidth || 1280;
-    const height = this.win?.innerHeight || 720;
+    const width = this.currentWin?.innerWidth || 1280;
+    const height = this.currentWin?.innerHeight || 720;
     return calculateSafeAreaRect({
       viewportWidth: width,
       viewportHeight: height,
@@ -534,7 +560,9 @@ export class MobileOrientationManager {
    * Sets up system event hooks on window and document
    */
   setupEventListeners() {
-    if (!this.win) return;
+    const win = this.currentWin;
+    const doc = this.currentDoc;
+    if (!win) return;
 
     const handleResizeOrOrientation = () => {
       if (this.debounceTimer) {
@@ -548,17 +576,17 @@ export class MobileOrientationManager {
       }, this.debounceDelay);
     };
 
-    this.win.addEventListener('resize', handleResizeOrOrientation);
-    this.win.addEventListener('orientationchange', handleResizeOrOrientation);
+    win.addEventListener('resize', handleResizeOrOrientation);
+    win.addEventListener('orientationchange', handleResizeOrOrientation);
 
-    if (this.win.visualViewport) {
-      this.win.visualViewport.addEventListener('resize', handleResizeOrOrientation);
+    if (win.visualViewport) {
+      win.visualViewport.addEventListener('resize', handleResizeOrOrientation);
     }
 
-    if (this.doc) {
+    if (doc) {
       const fsEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
       fsEvents.forEach(evt => {
-        this.doc.addEventListener(evt, () => {
+        doc.addEventListener(evt, () => {
           this._notifyFullscreen(this.isFullscreen());
         });
       });
@@ -572,3 +600,5 @@ export class MobileOrientationManager {
     }
   }
 }
+
+export const OrientationManager = MobileOrientationManager;

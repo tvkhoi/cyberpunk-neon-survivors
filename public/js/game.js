@@ -13,7 +13,11 @@ import { WorldObjectManager } from './entities/worldObjects.js';
 export class Game {
   constructor(canvas) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas ? canvas.getContext('2d') : null;
+    if (this.ctx) {
+      this.ctx.imageSmoothingEnabled = true;
+      this.ctx.imageSmoothingQuality = 'high';
+    }
 
     // Infinite Procedural Cyberpunk Arena (No Map Borders)
     this.worldWidth = Infinity;
@@ -69,8 +73,8 @@ export class Game {
     this.isGameOver = false;
     this.lastTime = performance.now();
 
-    // HiDPI / Retina devicePixelRatio support (capped at 2 to balance crystal crispness with GPU battery/thermal load)
-    this.dpr = typeof window !== 'undefined' ? Math.max(1, Math.min(window.devicePixelRatio || 1, 2)) : 1;
+    // Native 3x Retina DPR & Hardware Pixel Scaling for ultra-sharp OLED/Retina mobile displays (Module 1)
+    this.dpr = typeof window !== 'undefined' ? Math.max(1, Math.min(window.devicePixelRatio || 1, 3)) : 1;
 
     // High Refresh Rate & Fixed Timestep Loop settings (Module 1)
     this.targetFps = 0; // 0 = Uncapped (Native monitor refresh rate: 120Hz/144Hz/240Hz+), 60, 120, 144
@@ -117,10 +121,19 @@ export class Game {
   }
 
   resizeCanvas() {
-    const w = typeof window !== 'undefined' ? (window.visualViewport ? window.visualViewport.width : window.innerWidth) : 1280;
-    const h = typeof window !== 'undefined' ? (window.visualViewport ? window.visualViewport.height : window.innerHeight) : 720;
+    const w = typeof window !== 'undefined'
+      ? (window.visualViewport && typeof window.visualViewport.width === 'number'
+          ? window.visualViewport.width
+          : (typeof window.innerWidth === 'number' ? window.innerWidth : 1280))
+      : 1280;
+    const h = typeof window !== 'undefined'
+      ? (window.visualViewport && typeof window.visualViewport.height === 'number'
+          ? window.visualViewport.height
+          : (typeof window.innerHeight === 'number' ? window.innerHeight : 720))
+      : 720;
     if (typeof window !== 'undefined' && window.devicePixelRatio && !this.dpr) {
-      this.dpr = Math.max(1, Math.min(window.devicePixelRatio, 2));
+      // Support native 3x Retina/OLED mobile displays for crystal-clear HD graphics
+      this.dpr = Math.max(1, Math.min(window.devicePixelRatio, 3));
     } else if (!this.dpr) {
       this.dpr = 1;
     }
@@ -135,8 +148,20 @@ export class Game {
       this.canvas.style.height = `${h}px`;
     }
 
+    // Synchronize CSS Custom Properties for 100dvh & Anti-Notch Safe Area Bounds
+    if (typeof document !== 'undefined' && document.documentElement && document.documentElement.style) {
+      document.documentElement.style.setProperty('--vh', `${h * 0.01}px`);
+      document.documentElement.style.setProperty('--app-height', `${h}px`);
+      document.documentElement.style.setProperty('--app-width', `${w}px`);
+    }
+
     // Camera viewport maintains CSS logical coordinates
     this.camera.resize(w, h);
+
+    if (this.ctx) {
+      this.ctx.imageSmoothingEnabled = true;
+      this.ctx.imageSmoothingQuality = 'high';
+    }
   }
 
   resetInput() {
@@ -168,48 +193,51 @@ export class Game {
   }
 
   setupListeners() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
     window.addEventListener('resize', () => this.resizeCanvas());
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => this.resizeCanvas(), 150);
+      setTimeout(() => this.resizeCanvas(), 100);
+      setTimeout(() => this.resizeCanvas(), 300);
     });
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', () => this.resizeCanvas());
+      window.visualViewport.addEventListener('scroll', () => {
+        // Prevent accidental scroll shifts on mobile browsers
+        if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+      });
     }
 
     // Touch Support on Canvas for Aiming and Shooting on Mobile
     if (this.canvas && typeof this.canvas.addEventListener === 'function') {
-      this.canvas.addEventListener('touchstart', (e) => {
-        soundEngine.init();
+      const handleAimTouch = (e) => {
         if (!e.changedTouches) return;
+        const rect = this.canvas.getBoundingClientRect ? this.canvas.getBoundingClientRect() : { left: 0, top: 0 };
         for (let i = 0; i < e.changedTouches.length; i++) {
           const t = e.changedTouches[i];
           // If touch is on right 55% of the screen, aim and fire manually
           if (t.clientX > window.innerWidth * 0.45) {
-            this.mouse.x = t.clientX;
-            this.mouse.y = t.clientY;
-            this.mouseWorld = this.camera.screenToWorld(t.clientX, t.clientY);
+            const canvasX = t.clientX - rect.left;
+            const canvasY = t.clientY - rect.top;
+            this.mouse.x = canvasX;
+            this.mouse.y = canvasY;
+            this.mouseWorld = this.camera.screenToWorld(canvasX, canvasY);
             this.player.isManualAiming = true;
             this.isMouseDown = true;
-            this.weapons.fireWeapon('homing', this.player, this.enemies);
+            if (e.type === 'touchstart') {
+              this.weapons.fireWeapon('homing', this.player, this.enemies);
+            }
           }
         }
+      };
+
+      this.canvas.addEventListener('touchstart', (e) => {
+        soundEngine.init();
+        handleAimTouch(e);
       }, { passive: true });
 
-      this.canvas.addEventListener('touchmove', (e) => {
-        if (!e.changedTouches) return;
-        for (let i = 0; i < e.changedTouches.length; i++) {
-          const t = e.changedTouches[i];
-          if (t.clientX > window.innerWidth * 0.45) {
-            this.mouse.x = t.clientX;
-            this.mouse.y = t.clientY;
-            this.mouseWorld = this.camera.screenToWorld(t.clientX, t.clientY);
-            this.player.isManualAiming = true;
-          }
-        }
-      }, { passive: true });
+      this.canvas.addEventListener('touchmove', handleAimTouch, { passive: true });
 
-      this.canvas.addEventListener('touchend', (e) => {
+      const handleTouchEndOrCancel = (e) => {
         let rightTouchRemaining = false;
         if (e.touches) {
           for (let i = 0; i < e.touches.length; i++) {
@@ -220,9 +248,12 @@ export class Game {
         }
         if (!rightTouchRemaining) {
           this.isMouseDown = false;
-          this.player.isManualAiming = false;
+          if (this.player) this.player.isManualAiming = false;
         }
-      }, { passive: true });
+      };
+
+      this.canvas.addEventListener('touchend', handleTouchEndOrCancel, { passive: true });
+      this.canvas.addEventListener('touchcancel', handleTouchEndOrCancel, { passive: true });
     }
 
     // Auto-Pause when switching tabs or minimizing, re-sync clock when returning
