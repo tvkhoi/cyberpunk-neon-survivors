@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { Router } from 'express';
 import { errorHandler } from '../../interfaces/http/middlewares/errorHandler.js';
@@ -24,7 +25,9 @@ export function buildExpressApp(apiRouter: Router): express.Application {
   app.use(express.json({ limit: '16kb' }));
 
   // Static files from public folder with Edge caching policy
-  const publicPath = path.resolve(__dirname, '../../../public');
+  const publicPath = fs.existsSync(path.resolve(process.cwd(), 'public'))
+    ? path.resolve(process.cwd(), 'public')
+    : path.resolve(__dirname, '../../../public');
   app.use(express.static(publicPath, {
     maxAge: '1h',
     etag: true,

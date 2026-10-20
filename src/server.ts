@@ -43,6 +43,7 @@ export function createServer(): express.Application {
   return app;
 }
 
+const app = createServer();
 const PORT = process.env.PORT || 3001;
 const isMain = Boolean(
   process.argv[1] &&
@@ -50,7 +51,6 @@ const isMain = Boolean(
 );
 
 if (isMain) {
-  const app = createServer();
   app.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`⚡ Cyberpunk Neon Survivors Server is RUNNING!`);
@@ -61,3 +61,5 @@ if (isMain) {
     console.log(`====================================================`);
   });
 }
+
+export default app;
