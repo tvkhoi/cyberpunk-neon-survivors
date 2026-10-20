@@ -1,3 +1,45 @@
+# Testing & Test Suites
 tests/
+__tests__/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+coverage/
+.nyc_output/
+
+# Git & CI/CD
 .git/
+.github/
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+
+# Local & Environment Files
+.env*.local
+.env
+*.env
+
+# Dependencies & Local Builds
+node_modules/
+dist/
+.vercel/
+
+# Logs & Temporary Files
 *.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+tmp/
+temp/
+scratch/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build Scripts & Documentation not required at runtime
+scripts/
+docs/

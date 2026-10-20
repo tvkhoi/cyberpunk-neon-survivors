@@ -8,9 +8,10 @@ export class HighScoreController {
     private readonly getLeaderboardUseCase: GetLeaderboardUseCase
   ) {}
 
-  public getLeaderboard = async (_req: Request, res: Response): Promise<void> => {
+  public getLeaderboard = async (req: Request, res: Response): Promise<void> => {
     try {
-      const result = await this.getLeaderboardUseCase.execute(10);
+      const limit = req.query.limit ? Math.min(50, Math.max(1, parseInt(req.query.limit as string, 10) || 10)) : 10;
+      const result = await this.getLeaderboardUseCase.execute(limit);
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || 'Lỗi lấy bảng xếp hạng.' });

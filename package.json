@@ -6,10 +6,18 @@
   "main": "src/server.ts",
   "scripts": {
     "start": "tsx src/server.ts",
+    "start:prod": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "build:clean": "node -e \"fs.rmSync('./dist', { recursive: true, force: true });\" && tsc",
+    "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",
     "test:watch": "tsx --test --watch tests/**/*.test.ts",
-    "test:concurrency": "tsx --test tests/concurrency.test.ts"
+    "test:concurrency": "tsx --test tests/concurrency.test.ts",
+    "ci": "npm run typecheck && npm run test && npm run build",
+    "deploy": "node scripts/deploy.js",
+    "deploy:vercel": "vercel --prod",
+    "deploy:vercel:preview": "vercel"
   },
   "dependencies": {
     "express": "^4.19.2",
