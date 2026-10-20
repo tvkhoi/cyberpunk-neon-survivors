@@ -1,10 +1,19 @@
-import test, { describe, it } from 'node:test';
+import test, { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { Game } from '../public/js/game.js';
 
 describe('HD Ultra-Sharp Graphics & Retina 3x DPR System Tests', () => {
+  let originalWindow: any;
+
+  beforeEach(() => {
+    originalWindow = (global as any).window;
+  });
+
+  afterEach(() => {
+    (global as any).window = originalWindow;
+  });
 
   it('1. HTML5 Configuration: disables CRT scanline blur overlay by default', () => {
     const htmlPath = path.resolve(process.cwd(), 'public/index.html');

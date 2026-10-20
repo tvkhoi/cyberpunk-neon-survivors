@@ -1,10 +1,26 @@
-import test, { describe, it } from 'node:test';
+import test, { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import { MobileScreenManager } from '../public/js/engine/mobileScreen.js';
 
 describe('Mobile Fullscreen & Landscape Orientation System Tests', () => {
+  let originalWindow: any;
+  let originalScreen: any;
+  const originalNavigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+
+  beforeEach(() => {
+    originalWindow = (global as any).window;
+    originalScreen = (global as any).screen;
+  });
+
+  afterEach(() => {
+    (global as any).window = originalWindow;
+    (global as any).screen = originalScreen;
+    if (originalNavigatorDescriptor) {
+      Object.defineProperty(globalThis, 'navigator', originalNavigatorDescriptor);
+    }
+  });
 
   it('1. PWA Web App Manifest: configures display=fullscreen and orientation=landscape', () => {
     const manifestPath = path.resolve(process.cwd(), 'public/manifest.json');

@@ -120,6 +120,11 @@ export class Game {
     this.fpsLimiterAccumulator = 0;
   }
 
+  setDpr(dpr) {
+    this.dpr = Math.max(1, Math.min(dpr || 1, 3));
+    this.resizeCanvas();
+  }
+
   resizeCanvas() {
     const w = typeof window !== 'undefined'
       ? (window.visualViewport && typeof window.visualViewport.width === 'number'

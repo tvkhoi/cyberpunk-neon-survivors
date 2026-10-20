@@ -1,9 +1,19 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Camera } from '../public/js/engine/camera.js';
 import { SpatialHashGrid } from '../public/js/engine/spatialGrid.js';
+import { Game } from '../public/js/game.js';
 
 describe('Module 1: Game Loop, Camera Screen Shake & Spatial Hash Grid Test Suite', () => {
+  let originalWindow: any;
+
+  beforeEach(() => {
+    originalWindow = (global as any).window;
+  });
+
+  afterEach(() => {
+    (global as any).window = originalWindow;
+  });
   describe('1. Game Loop & High Refresh Rate Architecture', () => {
     it('should clamp delta time against spiral-of-death during background tab stalls', () => {
       // Simulating delta time clamping logic
